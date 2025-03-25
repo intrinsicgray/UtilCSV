@@ -11,24 +11,22 @@ import java.util.stream.Collectors;
 
 public class CSVFormatter {
 
-    private String newline   = System.lineSeparator();
-    private String delimiter = ",";
-    private String quote     = "\"";
+    private LineSeparator lineSeparator = LineSeparator.getFromValue(System.lineSeparator());
+    private String delimiter            = ",";
+    private String quote                = "\"";
 
     private boolean useHeader;
     private boolean alwaysUseQuotes;
 
 
     // Getters and setters
-    public String getNewline() {
-        return newline;
+    public LineSeparator getLineSeparator() {
+        return lineSeparator;
     }
 
-    public void setNewline(String newline) throws NullPointerException, IllegalArgumentException {
-        if(newline == null)   throw new NullPointerException("Newline cannot be null");
-        if(newline.isBlank()) throw new IllegalArgumentException("Newline cannot be empty");
-
-        this.newline = newline;
+    public void setLineSeparator(LineSeparator lineSeparator) throws IllegalArgumentException {
+        if(lineSeparator == null)   throw new NullPointerException("Newline cannot be null");
+        this.lineSeparator = lineSeparator;
     }
 
     public char getDelimiter() { return delimiter.charAt(0); }
@@ -44,8 +42,8 @@ public class CSVFormatter {
     public void setAlwaysUseQuotes(boolean alwaysUseQuotes) { this.alwaysUseQuotes = alwaysUseQuotes; }
 
 
-    public CSVFormatter newline(String newline) throws NullPointerException, IllegalArgumentException {
-        setNewline(newline);
+    public CSVFormatter lineSeparator(LineSeparator lineSeparator) throws IllegalArgumentException {
+        setLineSeparator(lineSeparator);
         return this;
     }
 
@@ -81,7 +79,7 @@ public class CSVFormatter {
         final String strRow = orderedCells
                 .stream()
                 .map(this::formatCell)
-                .collect(Collectors.joining(this.delimiter)) + this.newline;
+                .collect(Collectors.joining(this.delimiter)) + this.lineSeparator.value;
 
         writer.append(strRow);
     }
