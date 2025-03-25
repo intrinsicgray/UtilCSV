@@ -25,7 +25,7 @@ public enum LineSeparator {
             case "\r\n":
                 return LineSeparator.CRLF;
             default:
-                throw new IllegalArgumentException("Invalid line separator order");
+                throw new IllegalArgumentException("Invalid line separator value");
         }
     }
 }
