@@ -15,7 +15,7 @@ public enum LineSeparator {
 
 
     public static LineSeparator getFromValue(String value) throws NullPointerException, IllegalArgumentException {
-        if(value == null) throw new NullPointerException("value cannot be null");
+        if(value == null) throw new NullPointerException("order cannot be null");
 
         switch (value) {
             case "\n":
@@ -25,7 +25,7 @@ public enum LineSeparator {
             case "\r\n":
                 return LineSeparator.CRLF;
             default:
-                throw new IllegalArgumentException("Invalid line separator value");
+                throw new IllegalArgumentException("Invalid line separator order");
         }
     }
 }

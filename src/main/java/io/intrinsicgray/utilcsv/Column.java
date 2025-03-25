@@ -2,9 +2,9 @@ package io.intrinsicgray.utilcsv;
 
 class Column {
 
-    private String  name;
-    private Integer order;
-    private String  methodName;
+    private final String  name;
+    private final Integer order;
+    private final String  methodName;
 
 
     protected Column(String name, Integer order, String methodName) {
