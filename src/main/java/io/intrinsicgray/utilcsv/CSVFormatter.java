@@ -77,7 +77,7 @@ public class CSVFormatter extends CSVUtil {
                         + field.getName().substring(0,1).toUpperCase()
                         + field.getName().substring(1);
 
-                columns.add(new Column(columnName, csvColumn.order(), methodName));
+                columns.add(new Column(columnName, csvColumn.order(), field.getType(), methodName));
             }
         }
         columns.sort(Comparator.comparing(Column::getOrder));
