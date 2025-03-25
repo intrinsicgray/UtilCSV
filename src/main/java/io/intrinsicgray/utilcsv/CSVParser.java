@@ -1,5 +1,6 @@
 package io.intrinsicgray.utilcsv;
 
+import io.intrinsicgray.utilcsv.exception.CSVCannotBeParsedException;
 import io.intrinsicgray.utilcsv.exception.CellCannotBeParsedException;
 import io.intrinsicgray.utilcsv.exception.ColumnNameNotPresentException;
 import io.intrinsicgray.utilcsv.exception.InvalidColumnOrderException;
@@ -64,7 +65,7 @@ public class CSVParser extends CSVUtil {
     }
 
 
-    private <T> List<T> parse(List<String> rows, Class<T> destinationClass) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+    private <T> List<T> parse(List<String> rows, Class<T> destinationClass) throws CSVCannotBeParsedException, CellCannotBeParsedException, ColumnNameNotPresentException, InvalidColumnOrderException {
         final List<T> result = new ArrayList<>();
 
         List<List<String>> splittedRows = rows
@@ -95,73 +96,77 @@ public class CSVParser extends CSVUtil {
         }
 
         final List<Column> columns = new ArrayList<>();
-        if(this.useHeader) {
-            int columnCnt = 0;
-            for(String columnName : splittedRows.get(0)) {
-                columns.add(new Column(columnName, columnCnt, null, null));
-                columnCnt++;
-            }
+        try {
+            if(this.useHeader) {
+                int columnCnt = 0;
+                for(String columnName : splittedRows.get(0)) {
+                    columns.add(new Column(columnName, columnCnt, null, null));
+                    columnCnt++;
+                }
 
-            for(Field field : destinationClass.getDeclaredFields()) {
-                final CSVColumn csvColumn = field.getAnnotation(CSVColumn.class);
+                for(Field field : destinationClass.getDeclaredFields()) {
+                    final CSVColumn csvColumn = field.getAnnotation(CSVColumn.class);
 
-                if(csvColumn != null) {
-                    if(csvColumn.name().isBlank()) {
-                        throw new ColumnNameNotPresentException("The @CSVColumn annotation on "+destinationClass.getName()+"."+field.getName()+" does not have a valid name. Enter the column name if you set \"useHeader\" to true");
+                    if(csvColumn != null) {
+                        if(csvColumn.name().isBlank()) {
+                            throw new ColumnNameNotPresentException("The @CSVColumn annotation on "+destinationClass.getName()+"."+field.getName()+" does not have a valid name. Enter the column name if you set \"useHeader\" to true");
+                        }
+
+                        final String methodName = "set" + field.getName().substring(0,1).toUpperCase() + field.getName().substring(1);
+                        columns
+                                .stream()
+                                .filter(column -> column.getName().equals(csvColumn.name()))
+                                .findAny()
+                                .ifPresent(column -> {
+                                    column.setType(field.getType());
+                                    column.setMethodName(methodName);
+                                });
                     }
+                }
 
-                    final String methodName = "set" + field.getName().substring(0,1).toUpperCase() + field.getName().substring(1);
-                    columns
-                            .stream()
-                            .filter(column -> column.getName().equals(csvColumn.name()))
-                            .findAny()
-                            .ifPresent(column -> {
-                                column.setType(field.getType());
-                                column.setMethodName(methodName);
-                            });
+                splittedRows = splittedRows.subList(1, splittedRows.size());
+
+            } else {
+                for(Field field : destinationClass.getDeclaredFields()) {
+                    final CSVColumn csvColumn = field.getAnnotation(CSVColumn.class);
+
+                    if(csvColumn != null) {
+                        final Optional<Column> conflictColumn = columns
+                                .stream()
+                                .filter(column -> column.getOrder() == csvColumn.order())
+                                .findAny();
+
+                        if(conflictColumn.isPresent()) {
+                            throw new InvalidColumnOrderException(destinationClass.getName()+"."+field.getName()+" and "+destinationClass.getName()+"."+field.getName()+" have the same order value: " + conflictColumn.get().getOrder());
+                        }
+
+                        final String methodName = "set" + field.getName().substring(0,1).toUpperCase() + field.getName().substring(1);
+                        columns.add(new Column(field.getName(), csvColumn.order(), field.getType(), methodName));
+                    }
+                }
+
+                for(int i = 0; i<columns.size(); i++) {
+                    columns.get(i).setOrder(i);
                 }
             }
 
-            splittedRows = splittedRows.subList(1, splittedRows.size());
 
-        } else {
-            for(Field field : destinationClass.getDeclaredFields()) {
-                final CSVColumn csvColumn = field.getAnnotation(CSVColumn.class);
+            final Constructor<T> constructor = destinationClass.getDeclaredConstructor();
+            for(List<String> row : splittedRows) {
+                final T obj = constructor.newInstance();
 
-                if(csvColumn != null) {
-                    final Optional<Column> conflictColumn = columns
-                            .stream()
-                            .filter(column -> column.getOrder() == csvColumn.order())
-                            .findAny();
+                String cell;
+                for(Column column : columns) {
+                    cell = row.get(column.getOrder());
 
-                    if(conflictColumn.isPresent()) {
-                        throw new InvalidColumnOrderException(destinationClass.getName()+"."+field.getName()+" and "+destinationClass.getName()+"."+field.getName()+" have the same order value: " + conflictColumn.get().getOrder());
-                    }
-
-                    final String methodName = "set" + field.getName().substring(0,1).toUpperCase() + field.getName().substring(1);
-                    columns.add(new Column(field.getName(), csvColumn.order(), field.getType(), methodName));
+                    final Method method = destinationClass.getDeclaredMethod(column.getMethodName(), column.getType());
+                    method.invoke(obj, convertValue(column.getType(), cell));
                 }
+
+                result.add(obj);
             }
-
-            for(int i = 0; i<columns.size(); i++) {
-                columns.get(i).setOrder(i);
-            }
-        }
-
-
-        final Constructor<T> constructor = destinationClass.getDeclaredConstructor();
-        for(List<String> row : splittedRows) {
-            final T obj = constructor.newInstance();
-
-            String cell;
-            for(Column column : columns) {
-                cell = row.get(column.getOrder());
-
-                final Method method = destinationClass.getDeclaredMethod(column.getMethodName(), column.getType());
-                method.invoke(obj, convertValue(column.getType(), cell));
-            }
-
-            result.add(obj);
+        } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
+            throw new CSVCannotBeParsedException("Error during CSV parsing. "+e.getMessage(), e);
         }
 
         return result;
@@ -169,7 +174,7 @@ public class CSVParser extends CSVUtil {
 
 
     //Public methods
-    public <T> List<T> parse(BufferedReader reader, Class<T> destinationClass) throws IllegalArgumentException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException, IOException {
+    public <T> List<T> parse(BufferedReader reader, Class<T> destinationClass) throws IOException, CSVCannotBeParsedException, CellCannotBeParsedException, ColumnNameNotPresentException, InvalidColumnOrderException {
         final List<String> rows = new ArrayList<>();
         final StringBuilder row = new StringBuilder();
 
@@ -193,7 +198,7 @@ public class CSVParser extends CSVUtil {
         return parse(rows, destinationClass);
     }
 
-    public <T> List<T> parse(File file, Class<T> destinationClass) throws IOException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
+    public <T> List<T> parse(File file, Class<T> destinationClass) throws IOException, CSVCannotBeParsedException, CellCannotBeParsedException, ColumnNameNotPresentException, InvalidColumnOrderException {
         try(final FileReader fileReader = new FileReader(file)) {
             final BufferedReader bufferedReader = new BufferedReader(fileReader);
 
@@ -204,7 +209,7 @@ public class CSVParser extends CSVUtil {
         }
     }
 
-    public <T> List<T> parse(String csvContent, Class<T> destinationClass) throws IOException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
+    public <T> List<T> parse(String csvContent, Class<T> destinationClass) throws IOException, CSVCannotBeParsedException, CellCannotBeParsedException, ColumnNameNotPresentException, InvalidColumnOrderException {
         if(csvContent == null) throw new NullPointerException("csvContent cannot be null");
 
         final StringReader stringReader     = new StringReader(csvContent);
