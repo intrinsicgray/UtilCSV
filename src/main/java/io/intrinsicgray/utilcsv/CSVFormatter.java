@@ -1,7 +1,6 @@
 package io.intrinsicgray.utilcsv;
 
-import java.io.IOException;
-import java.io.Writer;
+import java.io.*;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -81,7 +80,7 @@ public class CSVFormatter {
                 .map(this::formatCell)
                 .collect(Collectors.joining(this.delimiter)) + this.lineSeparator.value;
 
-        writer.append(strRow);
+        writer.write(strRow);
     }
 
 
@@ -130,6 +129,23 @@ public class CSVFormatter {
 
             writeRowOnBuffer(orderedCells, writer);
         }
+    }
+
+
+    public <T> String format(List<T> rows) throws IOException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        final StringWriter stringWriter = new StringWriter();
+        format(rows, stringWriter);
+
+        return stringWriter.toString();
+    }
+
+    public <T> File format(List<T> rows, File file) throws IOException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        final FileWriter fileWriter = new FileWriter(file, false);
+        final BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+        format(rows, bufferedWriter);
+
+        bufferedWriter.close();
+        return file;
     }
 
 }
