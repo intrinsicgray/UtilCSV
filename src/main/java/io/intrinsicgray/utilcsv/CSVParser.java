@@ -166,7 +166,7 @@ public class CSVParser extends CSVUtil {
 
 
     //Public methods
-    public <T> List<T> parse(Reader reader, Class<T> destinationClass) throws IllegalArgumentException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException, IOException {
+    public <T> List<T> parse(BufferedReader reader, Class<T> destinationClass) throws IllegalArgumentException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException, IOException {
         final List<String> rows = new ArrayList<>();
         final StringBuilder row = new StringBuilder();
 

@@ -59,7 +59,7 @@ public class CSVFormatter extends CSVUtil {
 
 
     // Public methods
-    public <T> void format(List<T> rows, Writer writer) throws NullPointerException, IllegalAccessException, InvocationTargetException, NoSuchMethodException, IOException {
+    public <T> void format(List<T> rows, BufferedWriter writer) throws NullPointerException, IllegalAccessException, InvocationTargetException, NoSuchMethodException, IOException {
         if(rows == null)   throw new NullPointerException("rows cannot be null");
         if(rows.isEmpty()) return;
 
@@ -107,14 +107,16 @@ public class CSVFormatter extends CSVUtil {
 
 
     public <T> String format(List<T> rows) throws IOException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-        final StringWriter stringWriter = new StringWriter();
-        format(rows, stringWriter);
+        final StringWriter stringWriter     = new StringWriter();
+        final BufferedWriter bufferedWriter = new BufferedWriter(stringWriter);
+        format(rows, bufferedWriter);
 
+        bufferedWriter.close();
         return stringWriter.toString();
     }
 
     public <T> File format(List<T> rows, File file) throws IOException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-        final FileWriter fileWriter = new FileWriter(file, false);
+        final FileWriter fileWriter         = new FileWriter(file, false);
         final BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
         format(rows, bufferedWriter);
 
