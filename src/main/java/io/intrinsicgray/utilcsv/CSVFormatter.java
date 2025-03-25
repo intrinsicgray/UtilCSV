@@ -92,94 +92,66 @@ public class CSVFormatter {
 
     // Private methods
     private String formatCell(String cell) {
-        return cell.contains(String.valueOf(this.delimiter)) || alwaysUseQuotes
+        return alwaysUseQuotes || cell.contains(String.valueOf(this.delimiter))
                 ? this.quote + cell.replace(String.valueOf(this.quote), String.valueOf(this.quote+this.quote)) + this.quote
                 : cell;
     }
 
+    private void writeRowOnBuffer(List<String> orderedCells, Writer writer) throws IOException {
+        final String strRow = orderedCells
+                .stream()
+                .map(this::formatCell)
+                .collect(Collectors.joining(String.valueOf(this.delimiter))) + this.newline;
 
-    private void writeOnBuffer(List<Map<String, String>> rows, List<String> headerOrder, Writer writer) throws IllegalArgumentException, IOException {
-        if(headerOrder.isEmpty()) {
-            final Set<String> fields = new HashSet<>();
-            rows.forEach(row -> fields.addAll(row.keySet()));
-
-            headerOrder.addAll(fields);
-            headerOrder.sort(Comparator.naturalOrder());
-        } else {
-            final int columnsCnt = rows.stream()
-                    .max(Comparator.comparingInt(Map::size))
-                    .map(Map::size)
-                    .orElse(0);
-
-            if(headerOrder.size() != columnsCnt) {
-                throw new IllegalArgumentException("Wrong headers. Need to pass exactly "+ columnsCnt +" columns names, or empty");
-            }
-        }
-
-        if(this.useHeader) {
-            writer.write(
-                    headerOrder
-                            .stream()
-                            .map(this::formatCell)
-                            .collect(Collectors.joining(String.valueOf(this.delimiter)))
-                            + this.newline
-            );
-        }
-
-        for(Map<String, String> row : rows) {
-            String strRow;
-            for(int i=0; i<headerOrder.size()-1; i++) {
-                strRow = formatCell(row.getOrDefault(headerOrder.get(i), "")) + (i == headerOrder.size()-1 ? this.newline : this.delimiter);
-                writer.append(strRow);
-            }
-        }
+        writer.append(strRow);
     }
 
 
     // Public methods
-    public void format(List<?> rows, Writer writer, List<String> headerOrder) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException, NoSuchMethodException, IOException {
-        if(rows == null)   throw new IllegalArgumentException("rows cannot be null");
+    public <T> void format(List<T> rows, Writer writer) throws NullPointerException, IllegalAccessException, InvocationTargetException, NoSuchMethodException, IOException {
+        if(rows == null)   throw new NullPointerException("rows cannot be null");
         if(rows.isEmpty()) return;
 
-        final List<Map<String, String>> mappedRows = new ArrayList<>();
 
-        for(Object obj : rows) {
-            final Map<String, String> mappedObj = new HashMap<>();
+        final Class<?> clazz = rows.get(0).getClass();
+        final List<Column> columns = new ArrayList<>();
 
-            Object value;
-            String methodName;
-            String headerName;
-            CSVProperty csvProperty;
-            for(Field field : obj.getClass().getDeclaredFields()) {
-                csvProperty = field.getAnnotation(CSVProperty.class);
-                if(csvProperty != null) {
-                    if(!csvProperty.value().isBlank()) {
-                        headerName = csvProperty.value();
-                    } else if(csvProperty.position() > 0) {
-                        headerName = "Column " + csvProperty.position();
-                    } else {
-                        headerName = field.getName();
-                    }
+        for(Field field : clazz.getDeclaredFields()) {
+            final CSVColumn csvColumn = field.getAnnotation(CSVColumn.class);
 
-                    methodName = (field.getType().equals(boolean.class) ? "is":"get")
-                            + field.getName().substring(0,1).toUpperCase()
-                            + field.getName().substring(1);
+            if(csvColumn != null) {
+                final String columnName = csvColumn.name().isBlank() ? field.getName() : csvColumn.name();
 
-                    value = obj.getClass().getMethod(methodName).invoke(obj);
-                    mappedObj.put(headerName, value == null ? null : value.toString());
-                }
+                final String methodName = (field.getType().equals(boolean.class) ? "is":"get")
+                        + field.getName().substring(0,1).toUpperCase()
+                        + field.getName().substring(1);
+
+                columns.add(new Column(columnName, csvColumn.value(), methodName));
             }
+        }
+        columns.sort(Comparator.comparing(Column::getOrder));
 
-            mappedRows.add(mappedObj);
+
+        if(this.useHeader) {
+            writeRowOnBuffer(
+                    columns
+                            .stream()
+                            .map(Column::getName)
+                            .collect(Collectors.toList()),
+                    writer
+            );
         }
 
-        writeOnBuffer(mappedRows, headerOrder, writer);
+        for(Object row : rows) {
+            final List<String> orderedCells = new ArrayList<>();
+
+            for(Column column : columns) {
+                final Object value = clazz.getMethod(column.getMethodName()).invoke(row);
+                orderedCells.add(value == null ? "" : value.toString());
+            }
+
+            writeRowOnBuffer(orderedCells, writer);
+        }
     }
-
-    public void format(List<?> rows, Writer writer, String... headerOrder) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException, NoSuchMethodException, IOException {
-        format(rows, writer, new ArrayList<>(Arrays.asList(headerOrder)));
-    }
-
-
 
 }

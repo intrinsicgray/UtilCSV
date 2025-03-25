@@ -7,9 +7,9 @@ import java.lang.annotation.Target;
 
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface CSVProperty {
+public @interface CSVColumn {
 
-    String value() default "";
-    int position() default 0;
+    int value();
+    String name() default "";
 
 }
