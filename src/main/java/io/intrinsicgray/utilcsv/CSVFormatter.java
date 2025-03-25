@@ -1,7 +1,11 @@
 package io.intrinsicgray.utilcsv;
 
+import java.io.IOException;
+import java.io.Writer;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -88,14 +92,13 @@ public class CSVFormatter {
 
     // Private methods
     private String formatCell(String cell) {
-        if(cell == null) return "";
-
         return cell.contains(String.valueOf(this.delimiter)) || alwaysUseQuotes
                 ? this.quote + cell.replace(String.valueOf(this.quote), String.valueOf(this.quote+this.quote)) + this.quote
                 : cell;
     }
 
-    private String formatMap(List<Map<String, String>> rows, List<String> headerOrder) throws IllegalArgumentException {
+
+    private void writeOnBuffer(List<Map<String, String>> rows, List<String> headerOrder, Writer writer) throws IllegalArgumentException, IOException {
         if(headerOrder.isEmpty()) {
             final Set<String> fields = new HashSet<>();
             rows.forEach(row -> fields.addAll(row.keySet()));
@@ -113,42 +116,30 @@ public class CSVFormatter {
             }
         }
 
-        final StringBuilder stringBuilder = new StringBuilder();
-
         if(this.useHeader) {
-            stringBuilder
-                    .append(
-                            headerOrder.stream()
-                                    .map(this::formatCell)
-                                    .collect(Collectors.joining(String.valueOf(this.delimiter)))
-                    )
-                    .append(this.newline);
+            writer.write(
+                    headerOrder
+                            .stream()
+                            .map(this::formatCell)
+                            .collect(Collectors.joining(String.valueOf(this.delimiter)))
+                            + this.newline
+            );
         }
 
-        rows.forEach(row -> {
-            String cell;
+        for(Map<String, String> row : rows) {
+            String strRow;
             for(int i=0; i<headerOrder.size()-1; i++) {
-                cell = row.getOrDefault(headerOrder.get(i), "");
-
-                stringBuilder
-                        .append(formatCell(cell))
-                        .append(i == headerOrder.size()-1 ? this.newline : this.delimiter);
+                strRow = formatCell(row.getOrDefault(headerOrder.get(i), "")) + (i == headerOrder.size()-1 ? this.newline : this.delimiter);
+                writer.append(strRow);
             }
-        });
-
-        return stringBuilder.toString();
+        }
     }
 
 
     // Public methods
-
-    public String format(List<?> rows, List<String> headerOrder) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
-        if(rows == null) {
-            throw new IllegalArgumentException("rows cannot be null");
-        }
-        if(rows.isEmpty()) {
-            return "";
-        }
+    public void format(List<?> rows, Writer writer, List<String> headerOrder) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException, NoSuchMethodException, IOException {
+        if(rows == null)   throw new IllegalArgumentException("rows cannot be null");
+        if(rows.isEmpty()) return;
 
         final List<Map<String, String>> mappedRows = new ArrayList<>();
 
@@ -182,11 +173,13 @@ public class CSVFormatter {
             mappedRows.add(mappedObj);
         }
 
-        return formatMap(mappedRows, headerOrder);
+        writeOnBuffer(mappedRows, headerOrder, writer);
     }
 
-    public String format(List<?> rows, String... headerOrder) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
-        return format(rows, new ArrayList<>(Arrays.asList(headerOrder)));
+    public void format(List<?> rows, Writer writer, String... headerOrder) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException, NoSuchMethodException, IOException {
+        format(rows, writer, new ArrayList<>(Arrays.asList(headerOrder)));
     }
+
+
 
 }
