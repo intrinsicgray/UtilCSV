@@ -80,7 +80,10 @@ public class CSVParser extends CSVUtil {
                         }
                     }
 
-                    row = row.replace("\"", "");
+                    row = row.replace(this.quote+this.quote, "|||QTE|||");
+                    row = row.replace(this.quote, "");
+                    row = row.replace("|||QTE|||", this.quote);
+
                     return Arrays.stream(row.split(this.delimiter))
                             .map(cell -> cell.replace("|||DEL|||", this.delimiter))
                             .collect(Collectors.toList());
