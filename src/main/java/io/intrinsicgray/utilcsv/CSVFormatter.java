@@ -11,9 +11,9 @@ import java.util.stream.Collectors;
 
 public class CSVFormatter {
 
-    private String newline = System.lineSeparator();
-    private char delimiter = ',';
-    private char quote     = '\"';
+    private String newline   = System.lineSeparator();
+    private String delimiter = ",";
+    private String quote     = "\"";
 
     private boolean useHeader;
     private boolean alwaysUseQuotes;
@@ -31,37 +31,17 @@ public class CSVFormatter {
         this.newline = newline;
     }
 
-    public char getDelimiter() {
-        return delimiter;
-    }
+    public char getDelimiter() { return delimiter.charAt(0); }
+    public void setDelimiter(char delimiter) { this.delimiter = String.valueOf(delimiter); }
 
-    public void setDelimiter(char delimiter) {
-        this.delimiter = delimiter;
-    }
+    public char getQuote() { return quote.charAt(0); }
+    public void setQuote(char quote) { this.quote = String.valueOf(quote); }
 
-    public char getQuote() {
-        return quote;
-    }
+    public boolean isUseHeader() { return useHeader; }
+    public void setUseHeader(boolean useHeader) { this.useHeader = useHeader; }
 
-    public void setQuote(char quote) {
-        this.quote = quote;
-    }
-
-    public boolean isUseHeader() {
-        return useHeader;
-    }
-
-    public void setUseHeader(boolean useHeader) {
-        this.useHeader = useHeader;
-    }
-
-    public boolean isAlwaysUseQuotes() {
-        return alwaysUseQuotes;
-    }
-
-    public void setAlwaysUseQuotes(boolean alwaysUseQuotes) {
-        this.alwaysUseQuotes = alwaysUseQuotes;
-    }
+    public boolean isAlwaysUseQuotes() { return alwaysUseQuotes; }
+    public void setAlwaysUseQuotes(boolean alwaysUseQuotes) { this.alwaysUseQuotes = alwaysUseQuotes; }
 
 
     public CSVFormatter newline(String newline) throws NullPointerException, IllegalArgumentException {
@@ -92,8 +72,8 @@ public class CSVFormatter {
 
     // Private methods
     private String formatCell(String cell) {
-        return alwaysUseQuotes || cell.contains(String.valueOf(this.delimiter))
-                ? this.quote + cell.replace(String.valueOf(this.quote), String.valueOf(this.quote+this.quote)) + this.quote
+        return alwaysUseQuotes || cell.contains(this.delimiter)
+                ? this.quote + cell.replace(this.quote, this.quote + this.quote) + this.quote
                 : cell;
     }
 
@@ -101,7 +81,7 @@ public class CSVFormatter {
         final String strRow = orderedCells
                 .stream()
                 .map(this::formatCell)
-                .collect(Collectors.joining(String.valueOf(this.delimiter))) + this.newline;
+                .collect(Collectors.joining(this.delimiter)) + this.newline;
 
         writer.append(strRow);
     }
