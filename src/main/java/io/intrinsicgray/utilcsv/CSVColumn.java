@@ -9,7 +9,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface CSVColumn {
 
-    int order();
-    String name() default "";
+    int    order() default 0;
+    String name()  default "";
 
 }
