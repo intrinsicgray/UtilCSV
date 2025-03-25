@@ -8,59 +8,33 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class CSVFormatter {
+public class CSVFormatter extends CSVUtil {
 
-    private LineSeparator lineSeparator = LineSeparator.getFromValue(System.lineSeparator());
-    private String delimiter            = ",";
-    private String quote                = "\"";
-
-    private boolean useHeader;
-    private boolean alwaysUseQuotes;
-
-
-    // Getters and setters
-    public LineSeparator getLineSeparator() {
-        return lineSeparator;
-    }
-
-    public void setLineSeparator(LineSeparator lineSeparator) throws IllegalArgumentException {
-        if(lineSeparator == null)   throw new NullPointerException("Newline cannot be null");
-        this.lineSeparator = lineSeparator;
-    }
-
-    public char getDelimiter() { return delimiter.charAt(0); }
-    public void setDelimiter(char delimiter) { this.delimiter = String.valueOf(delimiter); }
-
-    public char getQuote() { return quote.charAt(0); }
-    public void setQuote(char quote) { this.quote = String.valueOf(quote); }
-
-    public boolean isUseHeader() { return useHeader; }
-    public void setUseHeader(boolean useHeader) { this.useHeader = useHeader; }
-
-    public boolean isAlwaysUseQuotes() { return alwaysUseQuotes; }
-    public void setAlwaysUseQuotes(boolean alwaysUseQuotes) { this.alwaysUseQuotes = alwaysUseQuotes; }
-
-
+    @Override
     public CSVFormatter lineSeparator(LineSeparator lineSeparator) throws IllegalArgumentException {
         setLineSeparator(lineSeparator);
         return this;
     }
 
+    @Override
     public CSVFormatter delimiter(char delimiter) {
         setDelimiter(delimiter);
         return this;
     }
 
+    @Override
     public CSVFormatter quote(char quote) {
         setQuote(quote);
         return this;
     }
 
+    @Override
     public CSVFormatter useHeader(boolean useHeader) {
         setUseHeader(useHeader);
         return this;
     }
 
+    @Override
     public CSVFormatter alwaysUseQuotes(boolean alwaysUseQuotes) {
         setAlwaysUseQuotes(alwaysUseQuotes);
         return this;
