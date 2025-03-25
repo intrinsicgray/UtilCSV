@@ -53,8 +53,8 @@ public class CSVParser extends CSVUtil {
     // Private methods
     private Object convertValue(Class<?> type, String value) throws CellCannotBeParsedException {
         if (type == String.class) return value;
-        if (type == int.class || type == Integer.class) return Integer.parseInt(value);
-        if (type == double.class || type == Double.class) return Double.parseDouble(value);
+        if (type == int.class || type == Integer.class) return Integer.parseInt(value.trim());
+        if (type == double.class || type == Double.class) return Double.parseDouble(value.trim());
         if (type == boolean.class || type == Boolean.class) return Boolean.parseBoolean(value);
         if (type == LocalDate.class) return LocalDate.parse(value);
         if (type == LocalDateTime.class) return LocalDateTime.parse(value);
@@ -185,6 +185,9 @@ public class CSVParser extends CSVUtil {
             } else {
                 row.append((char) character);
             }
+        }
+        if(row.length() > 0) {
+            rows.add(row.toString());
         }
 
         return parse(rows, destinationClass);
