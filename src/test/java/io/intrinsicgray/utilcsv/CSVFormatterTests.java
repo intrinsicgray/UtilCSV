@@ -22,27 +22,6 @@ public class CSVFormatterTests {
     }
 
 
-    @Test
-    void testNullList() {
-        assertThrows(NullPointerException.class, () ->formatter.format(null));
-    }
-
-    @Test
-    void formatterEmptyList() {
-        final List<PersonNameAndOrder> people = List.of();
-
-        //String
-        try {
-            String csvContent = formatter.format(people);
-
-            assertNotNull(csvContent);
-            assertEquals("", csvContent);
-        } catch (Exception e) {
-            fail(e);
-        }
-    }
-
-
     private void testExpectedCsvContent(List<Person> people, String expectedCsv) {
         try {
             String csvContent = formatter.format(people);
@@ -54,6 +33,17 @@ public class CSVFormatterTests {
         }
     }
 
+
+
+    @Test
+    void testNullList() {
+        assertThrows(NullPointerException.class, () ->formatter.format(null));
+    }
+
+    @Test
+    void formatterEmptyList() {
+        testExpectedCsvContent(List.of(), "");
+    }
 
     @Test
     void formatterNameAndOrder() {
