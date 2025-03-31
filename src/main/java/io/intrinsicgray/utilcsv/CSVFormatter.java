@@ -1,5 +1,7 @@
 package io.intrinsicgray.utilcsv;
 
+import io.intrinsicgray.utilcsv.exception.ListCannotBeFormattedException;
+
 import java.io.*;
 
 import java.lang.reflect.Field;
@@ -8,6 +10,40 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Utility class for converting a list of objects into a CSV file.
+ * This class processes objects annotated with {@link CSVColumn} and generates
+ * a properly formatted CSV output, handling headers, quotes, and line endings.
+ *
+ * <p>The formatter automatically extracts field values based on the {@link CSVColumn}
+ * annotation and orders them accordingly. It also ensures proper escaping of values
+ * when necessary (e.g., wrapping values in quotes if they contain commas or newlines).</p>
+ *
+ * <p>Usage example:</p>
+ * <pre>
+ * List&lt;Person&gt; people = getPeopleList();
+ * CSVFormatter csvFormatter = new CSVFormatter();
+ *
+ * //Save as string
+ * String csvContent = csvFormatter.format(people);
+ *
+ * //Save as file
+ * File file = new File("output.csv");
+ * file = csvFormatter.format(people, file);
+ *
+ * //Use a buffered writer
+ * FileWriter writer = new FileWriter("output.csv");
+ * BufferedWriter bw = new BufferedWriter(writer);
+ * csvFormatter.format(people, bw);
+ *
+ * writer.close();
+ * bw.close();
+ * </pre>
+ *
+ * @author Intrinsic gray (mdegiovanni97@gmail.com)
+ * @version 0.1.0
+ * @since 0.1.0
+ */
 public class CSVFormatter extends CSVUtil {
 
     @Override
@@ -59,8 +95,21 @@ public class CSVFormatter extends CSVUtil {
 
 
     // Public methods
-    public <T> void format(List<T> rows, BufferedWriter writer) throws NullPointerException, IllegalAccessException, InvocationTargetException, NoSuchMethodException, IOException {
+
+    /**
+     * Format a {@link List} of object into a CSV file using a user-defined {@link BufferedWriter}
+     *
+     * @param rows The list of object to format into a CSV
+     * @param writer The BufferedWriter where the formatter will write the CSV file
+     * @param <T> The class of the objects
+     *
+     * @throws NullPointerException If rows or writer is null
+     * @throws ListCannotBeFormattedException If there's a problem during the CSV formatting (check cause)
+     */
+    public <T> void format(List<T> rows, BufferedWriter writer) throws NullPointerException, ListCannotBeFormattedException {
         if(rows == null)   throw new NullPointerException("rows cannot be null");
+        if(writer == null) throw new NullPointerException("writer cannot be null");
+
         if(rows.isEmpty()) return;
 
 
@@ -82,31 +131,45 @@ public class CSVFormatter extends CSVUtil {
         }
         columns.sort(Comparator.comparing(Column::getOrder));
 
-
-        if(this.useHeader) {
-            writeRowOnBuffer(
-                    columns
-                            .stream()
-                            .map(Column::getName)
-                            .collect(Collectors.toList()),
-                    writer
-            );
-        }
-
-        for(Object row : rows) {
-            final List<String> orderedCells = new ArrayList<>();
-
-            for(Column column : columns) {
-                final Object value = clazz.getMethod(column.getMethodName()).invoke(row);
-                orderedCells.add(value == null ? "" : value.toString());
+        try {
+            if(this.useHeader) {
+                writeRowOnBuffer(
+                        columns
+                                .stream()
+                                .map(Column::getName)
+                                .collect(Collectors.toList()),
+                        writer
+                );
             }
 
-            writeRowOnBuffer(orderedCells, writer);
+            for(Object row : rows) {
+                final List<String> orderedCells = new ArrayList<>();
+
+                for(Column column : columns) {
+                    final Object value = clazz.getMethod(column.getMethodName()).invoke(row);
+                    orderedCells.add(value == null ? "" : value.toString());
+                }
+
+                writeRowOnBuffer(orderedCells, writer);
+            }
+        } catch (IOException | InvocationTargetException | IllegalArgumentException | NoSuchMethodException | IllegalAccessException e) {
+            throw new ListCannotBeFormattedException("Error during CSV formatting, "+e.getMessage(), e);
         }
     }
 
-
-    public <T> String format(List<T> rows) throws IOException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    /**
+     * Format a {@link List} of object into a CSV file, saving the result into a String
+     *
+     * @param rows The list of object to format into a CSV
+     * @param <T> The class of the objects
+     *
+     * @return A string containing the CSV content
+     *
+     * @throws NullPointerException If rows or writer is null
+     * @throws IOException If there's a problem during the CSV formatting (check cause)
+     * @throws ListCannotBeFormattedException If there's a problem during the CSV formatting (check cause)
+     */
+    public <T> String format(List<T> rows) throws NullPointerException, IOException, ListCannotBeFormattedException {
         final StringWriter stringWriter     = new StringWriter();
         final BufferedWriter bufferedWriter = new BufferedWriter(stringWriter);
         format(rows, bufferedWriter);
@@ -115,11 +178,24 @@ public class CSVFormatter extends CSVUtil {
         return stringWriter.toString();
     }
 
-    public <T> File format(List<T> rows, File file) throws IOException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    /**
+     * Format a {@link List} of object into a CSV file, saving the result into a {@link File}
+     *
+     * @param rows The list of object to format into a CSV
+     * @param <T> The class of the objects
+     *
+     * @return The saved file. Note that the file will not be automatically created.
+     *
+     * @throws NullPointerException If rows or writer is null
+     * @throws IOException If there's a problem during the CSV formatting (check cause)
+     * @throws ListCannotBeFormattedException If there's a problem during the CSV formatting (check cause)
+     */
+    public <T> File format(List<T> rows, File file) throws NullPointerException, IOException, ListCannotBeFormattedException {
         final FileWriter fileWriter         = new FileWriter(file, false);
         final BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
         format(rows, bufferedWriter);
 
+        fileWriter.close();
         bufferedWriter.close();
         return file;
     }

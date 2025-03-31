@@ -18,6 +18,40 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * Utility class for parsing a CSV file into a list of objects.
+ * This class reads CSV data and maps it to objects annotated with {@link CSVColumn}.
+ * It supports handling headers, quotes, and different line-ending characters.
+ *
+ * <p>The parser automatically maps CSV columns to object fields based on the
+ * {@link CSVColumn} annotation and creates instances of the target class accordingly.</p>
+ *
+ * <p>Usage example:</p>
+ * <pre>
+ * List&lt;Person&gt; people;
+ * CSVParser csvParser = new CSVParser();
+ *
+ * //Read from a string
+ * String csvContent = getCsvContent();
+ * people = csvParser.parse(csvContent, Person.class);
+ *
+ * //Read from file
+ * File file = new File("input.csv");
+ * people = csvParser.parse(file, Person.class);
+ *
+ * //Use a buffered reader
+ * FileReader reader = new FileReader("input.csv");
+ * BufferedReader br = new BufferedReader(reader);
+ * csvParser.parse(br, Person.class);
+ *
+ * reader.close();
+ * br.close();
+ * </pre>
+ *
+ * @author Intrinsic gray (mdegiovanni97@gmail.com)
+ * @version 0.1.0
+ * @since 0.1.0
+ */
 public class CSVParser extends CSVUtil {
 
     @Override
@@ -204,6 +238,7 @@ public class CSVParser extends CSVUtil {
 
             final List<T> result = parse(bufferedReader, destinationClass);
 
+            fileReader.close();
             bufferedReader.close();
             return result;
         }
@@ -217,6 +252,7 @@ public class CSVParser extends CSVUtil {
 
         final List<T> result = parse(bufferedReader, destinationClass);
 
+        stringReader.close();
         bufferedReader.close();
         return result;
     }
