@@ -80,8 +80,8 @@ public class CSVFormatter extends CSVUtil {
     // Private methods
     private String formatCell(String cell) {
         return alwaysUseQuotes || cell.contains(this.delimiter)
-                ? this.quote + cell.replace(this.quote, this.quote + this.quote) + this.quote
-                : cell;
+                ? this.quote + escape(cell.replace(this.quote, this.quote + this.quote)) + this.quote
+                : escape(cell);
     }
 
     private void writeRowOnBuffer(List<String> orderedCells, Writer writer) throws IOException {
