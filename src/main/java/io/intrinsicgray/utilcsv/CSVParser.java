@@ -87,7 +87,7 @@ public class CSVParser extends CSVUtil {
 
     // Private methods
     private Object convertValue(Class<?> type, String value) throws CellCannotBeParsedException {
-        if (type == String.class) return escape(value);
+        if (type == String.class) return unescape(value);
         if (type == int.class || type == Integer.class) return Integer.parseInt(value.trim());
         if (type == double.class || type == Double.class) return Double.parseDouble(value.trim());
         if (type == boolean.class || type == Boolean.class) return Boolean.parseBoolean(value);

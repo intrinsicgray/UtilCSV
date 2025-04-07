@@ -21,6 +21,17 @@ abstract class CSVUtil {
                 .replace("\\", "\\\\");
     }
 
+    protected String unescape(String str) {
+        return str
+                .replace("\\t", "\t")
+                .replace("\\b", "\b")
+                .replace("\\t", "\t")
+                .replace("\\n", "\n")
+                .replace("\\r", "\r")
+                .replace("\\f", "\f")
+                .replace("\\\\", "\\");
+    }
+
 
     /**
      * @return The line separator used for CSV parsing/formatting. The system line separator is set as default
