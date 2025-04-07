@@ -1,5 +1,5 @@
 # UtilCSV
-### v0.1.0
+### v0.1.2
 
 ![GitHub License](https://img.shields.io/github/license/intrinsicgray/UtilCSV)
 ![Maven Central Last Update](https://img.shields.io/maven-central/last-update/io.github.intrinsicgray/utilcsv)
@@ -23,13 +23,13 @@ Using Maven:
 <dependency>
     <groupId>io.github.intrinsicgray</groupId>
     <artifactId>csvutil</artifactId>
-    <version>0.1.0</version>
+    <version>0.1.2</version>
 </dependency>
 ```
 
 Using Gradle:
 ```groovy
-implementation 'io.github.intrinsicgray:csvutil:0.1.0'
+implementation 'io.github.intrinsicgray:csvutil:0.1.2'
 ```
 
 ---
@@ -126,6 +126,9 @@ Both **CSVFormatter** and **CSVParser** have the following methods in order to p
 - ``setQuotes()``: Set the desired charater to use as quote. Double quotes (__"__) are used by default
 - ``useHeader()``: If set as true, then the assumption is that the first row of the CSV contains the columns names
 - ``alwaysUseQuotes``: If set as true, all CSV cells contains quotes. Otherwise only the cells that contains the delimiter character will use the quotes
+
+### Contributing
+We'd love your contribution and bug reports are always welcome! You can open a bug report on GitHub.
 
 ## License
 This project is licensed under the [Apache 2.0 License](https://github.com/intrinsicgray/UtilCSV/blob/master/LICENSE).
